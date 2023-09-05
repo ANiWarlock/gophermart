@@ -4,18 +4,17 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
-	"strings"
 )
 
 func Gzip(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		ow := rw
 
-		contentType := r.Header.Get("Content-Type")
-		gzipAllowed := strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")
+		contentType := rw.Header().Get("Content-Type")
+		gzipAllowed := contentType == "application/json" || contentType == "text/html"
 
 		acceptEncoding := r.Header.Get("Accept-Encoding")
-		supportsGzip := strings.Contains(acceptEncoding, "gzip")
+		supportsGzip := acceptEncoding == "gzip"
 		if supportsGzip && gzipAllowed {
 			cw := newCompressWriter(rw)
 			ow = cw
@@ -23,7 +22,7 @@ func Gzip(next http.Handler) http.Handler {
 		}
 
 		contentEncoding := r.Header.Get("Content-Encoding")
-		sendsGzip := strings.Contains(contentEncoding, "gzip")
+		sendsGzip := contentEncoding == "gzip"
 		if sendsGzip {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {

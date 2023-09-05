@@ -48,7 +48,7 @@ func (a *App) CreateWithdrawHandler(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	err = a.db.Transaction(func(tx *gorm.DB) error {
-		a.db.First(&balance, "user_id = ?", userID)
+		tx.First(&balance, "user_id = ?", userID)
 
 		if balance.Current >= withdraw.Sum {
 			balance.Current -= withdraw.Sum
