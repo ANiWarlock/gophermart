@@ -14,14 +14,14 @@ func (a *App) LoginHandler(rw http.ResponseWriter, r *http.Request) {
 	var authReq models.User
 	var userFromDB models.User
 
-	_, err := buf.ReadFrom(r.Body)
+	n, err := buf.ReadFrom(r.Body)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		a.sugar.Errorf("Cannot process body: %v", err)
 		return
 	}
 
-	if buf.String() == "" {
+	if n == 0 {
 		http.Error(rw, "Empty body!", http.StatusBadRequest)
 		return
 	}

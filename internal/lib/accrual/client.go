@@ -3,6 +3,7 @@ package accrual
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/ANiWarlock/gophermart/cmd/gophermart/config"
 	"net/http"
@@ -15,19 +16,26 @@ type Accrual struct {
 	Accrual float64
 }
 
-var cfg config.AppConfig
-
-func Init(conf *config.AppConfig) {
-	cfg = *conf
+type Client struct {
+	config config.AppConfig
 }
 
-func Get(order string) (*Accrual, error) {
+var ErrTooManyRequests = errors.New("too many requests")
+
+func Init(conf *config.AppConfig) (*Client, error) {
+	client := Client{
+		*conf,
+	}
+	return &client, nil
+}
+
+func (ac *Client) Get(order string) (*Accrual, error) {
 	var accrual Accrual
 	var buf bytes.Buffer
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
-	path := fmt.Sprintf("%s/api/orders/%s", cfg.AccrualSystemAddress, order)
+	path := fmt.Sprintf("%s/api/orders/%s", ac.config.AccrualSystemAddress, order)
 	resp, err := client.Get(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get accrual: %w", err)
@@ -35,6 +43,10 @@ func Get(order string) (*Accrual, error) {
 
 	if resp.StatusCode == http.StatusNoContent {
 		return nil, nil
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, ErrTooManyRequests
 	}
 
 	_, err = buf.ReadFrom(resp.Body)
